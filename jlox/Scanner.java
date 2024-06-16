@@ -77,6 +77,8 @@ public class Scanner {
                 if (match('/')) {
                     while (peek() != '\n' && !isAtEnd())
                         advance();
+                } else if (match('*')) {
+                    multilineComment();
                 } else {
                     addToken(TokenType.SLASH);
                 }
@@ -117,6 +119,7 @@ public class Scanner {
 
         if (isAtEnd()) {
             Lox.error(line, "Unterminated string.");
+            return;
         }
 
         // Closing "
@@ -152,6 +155,22 @@ public class Scanner {
         if (type == null)
             type = TokenType.IDENTIFIER;
         addToken(type);
+    }
+
+    private void multilineComment() {
+        while ((peek() != '*' || peekNext() != '/') && !isAtEnd()) {
+            if (peek() == '\n')
+                line++;
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated multi-line comment.");
+            return;
+        }
+
+        // Consume closing
+        advance(); advance();
     }
 
     private boolean match(char expected) {
