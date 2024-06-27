@@ -33,7 +33,7 @@ public class ASTPrinter implements Expr.Visitor<String> {
         builder.append("(").append(name);
         for (Expr expr : exprs) {
             builder.append(" ");
-            builder.append(expr.accept(this));
+            builder.append(expr.accept(this)); // recursive step
         }
         builder.append(")");
 
