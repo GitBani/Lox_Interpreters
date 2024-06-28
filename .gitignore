@@ -3,3 +3,4 @@
 
 .idea
 jlox/*.iml
+jlox/out
