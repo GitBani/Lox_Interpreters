@@ -5,15 +5,17 @@ import java.util.List;
 import static lox.TokenType.*;
 
 /*
+program        → statement* EOF ;
+statement      → exprStmt | printStmt ;
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
 expression     → equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
-               | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
+unary          → ( "!" | "-" ) unary | primary ;
+primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
  */
 public class Parser {
     private static class ParseError extends RuntimeException {}
@@ -106,7 +108,7 @@ public class Parser {
 
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
-            comsume(RIGHT_PAREN, "Expect ')' after expression.");
+            consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
 
@@ -123,7 +125,7 @@ public class Parser {
         return false;
     }
 
-    private Token comsume(TokenType type, String message) {
+    private Token consume(TokenType type, String message) {
         if (check(type))
             return advance();
 
