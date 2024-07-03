@@ -1,10 +1,5 @@
-// Fibonacci.lox
-
-var a = 0;
-var temp;
-
-for (var b = 1; a < 1000000; b = temp + b) {
-    print a;
-    temp = a;
-    a = b;
+fun greet(firstName, lastName) {
+    print "Hello, " + firstName + " " + lastName + "!";
 }
+
+greet("Bani", "Somo");
