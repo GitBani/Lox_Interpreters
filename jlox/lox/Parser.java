@@ -11,11 +11,12 @@ program        → declaration* EOF ;
 declaration    → funDecl | varDecl | statement ;
 funDecl        → "fun" function ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement      → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+statement      → exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block ;
 exprStmt       → expression ";" ;
 forStmt        → "for" "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
 ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
 printStmt      → "print" expression ";" ;
+returnStmt     → "return" expression? ";" ;
 whileStmt      → "while" "(" expression ")" statement ;
 block          → "{" declaration* "}" ;
 expression     → assignment ;
@@ -78,11 +79,12 @@ public class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // statement → exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+    // statement → exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block ;
     private Stmt statement() {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(RETURN)) return returnStmt();
         if (match(WHILE)) return whileStmt();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
@@ -154,6 +156,17 @@ public class Parser {
         Expr value = expression();
         consume(SEMICOLON, "Expect ';' after value.");
         return new Stmt.Print(value);
+    }
+
+    // returnStmt → "return" expression? ";" ;
+    private Stmt returnStmt() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON))  {
+            value = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     // whileStmt → "while" "(" expression ")" statement ;
