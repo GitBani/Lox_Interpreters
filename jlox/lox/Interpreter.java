@@ -1,7 +1,11 @@
 package lox;
 
+import com.sun.jdi.IntegerType;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static lox.TokenType.*;
 
@@ -9,6 +13,7 @@ public class Interpreter implements Expr.Visitor<Object>,
                                     Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -39,57 +44,42 @@ public class Interpreter implements Expr.Visitor<Object>,
         }
     }
 
-    @Override
-    public Object visitLiteralExpr(Expr.Literal expr) {
-        return expr.value;
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
+    }
+
+    void executeBlock(List<Stmt> statements, Environment environment) {
+        Environment previous = this.environment;
+        try {
+            this.environment = environment;
+
+            for (Stmt stmt : statements) {
+                execute(stmt);
+            }
+        } finally {
+            this.environment = previous;
+        }
+    }
+
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
     }
 
     @Override
-    public Object visitLogicalExpr(Expr.Logical expr) {
-        Object left = evaluate(expr.left);
+    public Object visitAssignExpr(Expr.Assign expr) {
+        Object value = evaluate(expr.value);
 
-        if (expr.operator.type == OR) {
-            if (isTruthy(left)) return left;
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value);
         } else {
-            if (!isTruthy(left)) return left;
+            globals.assign(expr.name, value);
         }
-
-        return evaluate(expr.right);
-    }
-
-    @Override
-    public Object visitGroupingExpr(Expr.Grouping expr) {
-        return evaluate(expr.expression);
-    }
-
-    @Override
-    public Object visitUnaryExpr(Expr.Unary expr) {
-        Object right = evaluate(expr.right);
-
-        switch (expr.operator.type) {
-            case MINUS:
-                checkNumberOperand(expr.operator, right);
-                return -(double)right;
-            case BANG:
-                return !isTruthy(right);
-        }
-        // unreachable
-        return null;
-    }
-
-    @Override
-    public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
-    }
-
-    private void checkNumberOperand(Token operator, Object operand) {
-        if (operand instanceof Double) return;
-        throw new RuntimeError(operator, "Operand must be a number");
-    }
-
-    private void checkNumberOperands(Token operator, Object left, Object right) {
-        if (left instanceof Double && right instanceof Double) return;
-        throw new RuntimeError(operator, "Operands must be a number");
+        return value;
     }
 
     @Override
@@ -158,24 +148,55 @@ public class Interpreter implements Expr.Visitor<Object>,
         return function.call(this, arguments);
     }
 
-    private Object evaluate(Expr expr) {
-        return expr.accept(this);
+    @Override
+    public Object visitGroupingExpr(Expr.Grouping expr) {
+        return evaluate(expr.expression);
     }
 
-    private void execute(Stmt stmt) {
-        stmt.accept(this);
+    @Override
+    public Object visitLiteralExpr(Expr.Literal expr) {
+        return expr.value;
     }
 
-    void executeBlock(List<Stmt> statements, Environment environment) {
-        Environment previous = this.environment;
-        try {
-            this.environment = environment;
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
 
-            for (Stmt stmt : statements) {
-                execute(stmt);
-            }
-        } finally {
-            this.environment = previous;
+        if (expr.operator.type == OR) {
+            if (isTruthy(left)) return left;
+        } else {
+            if (!isTruthy(left)) return left;
+        }
+
+        return evaluate(expr.right);
+    }
+
+    @Override
+    public Object visitUnaryExpr(Expr.Unary expr) {
+        Object right = evaluate(expr.right);
+
+        switch (expr.operator.type) {
+            case MINUS:
+                checkNumberOperand(expr.operator, right);
+                return -(double)right;
+            case BANG:
+                return !isTruthy(right);
+        }
+        // unreachable
+        return null;
+    }
+
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return lookUpVariable(expr.name, expr);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.lexeme);
+        } else {
+            return globals.get(name);
         }
     }
 
@@ -242,11 +263,14 @@ public class Interpreter implements Expr.Visitor<Object>,
         return null;
     }
 
-    @Override
-    public Object visitAssignExpr(Expr.Assign expr) {
-        Object value = evaluate(expr.value);
-        environment.assign(expr.name, value);
-        return value;
+    private void checkNumberOperand(Token operator, Object operand) {
+        if (operand instanceof Double) return;
+        throw new RuntimeError(operator, "Operand must be a number");
+    }
+
+    private void checkNumberOperands(Token operator, Object left, Object right) {
+        if (left instanceof Double && right instanceof Double) return;
+        throw new RuntimeError(operator, "Operands must be a number");
     }
 
     private boolean isTruthy(Object object) {
