@@ -1,10 +1,15 @@
-var a = "global";
-{
-  fun showA() {
-    print a;
-  }
+class Person {
+    hello() {
+        print "hi";
+    }
 
-  showA();
-  var a = "block";
-  showA();
+    doubleGreet() {
+        print "hello";
+        print hello;
+    }
 }
+
+var bani = Person();
+bani.hello();
+var steal = bani.hello;
+steal();
