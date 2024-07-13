@@ -1,15 +1,12 @@
 class Person {
-    hello() {
-        print "hi";
+    init() {
+        this.name = "bani";
     }
 
-    doubleGreet() {
-        print "hello";
-        print hello;
+    hi() {
+        print this.name;
     }
 }
 
 var bani = Person();
-bani.hello();
-var steal = bani.hello;
-steal();
+bani.hi();
