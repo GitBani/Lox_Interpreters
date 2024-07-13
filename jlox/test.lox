@@ -1,12 +1,9 @@
-class Person {
-    init() {
-        this.name = "bani";
-    }
-
-    hi() {
-        print this.name;
-    }
+class Doughnut {
+  cook() {
+    print "Fry until golden brown.";
+  }
 }
 
-var bani = Person();
-bani.hi();
+class BostonCream < Doughnut {}
+
+BostonCream().cook();
