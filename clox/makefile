@@ -1,5 +1,6 @@
 CC = clang
-CFLAGS =-g3 -Wall -Wextra -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion
+DIR = includes
+CFLAGS = -I$(DIR) -g3 -Wall -Wextra -Wconversion -Wdouble-promotion -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion
 
 TARGET = clox
 
