@@ -22,6 +22,7 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 run:
+	make -s clean
 	make -s
 	./$(OBJDIR)/$(TARGET)
 

@@ -63,9 +63,11 @@ static InterpretResult run()
         switch (instruction = READ_BYTE())
         {
         case OP_CONSTANT:
+        {
             Value constant = READ_CONSTANT();
             push(constant);
             break;
+        }
         case OP_ADD:
             BINARY_OP(+);
             break;
