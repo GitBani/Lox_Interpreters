@@ -13,7 +13,28 @@ typedef struct
     bool panicMode;
 } Parser;
 
+typedef enum
+{
+    PREC_NONE,
+    PREC_ASSIGNMENT,
+    PREC_OR,
+    PREC_AND,
+    PREC_EQUALITY,
+    PREC_COMPARISION,
+    PREC_TERM,
+    PREC_FACTOR,
+    PREC_UNARY,
+    PREC_CALL,
+    PREC_PRIMARY
+} Precedence;
+
 Parser parser;
+Chunk *compilingChunk;
+
+static Chunk *currentChunk()
+{
+    return compilingChunk;
+}
 
 static void errorAt(Token *token, const char *message)
 {
@@ -75,9 +96,86 @@ static void consume(TokenType type, const char *message)
     errorAtCurrent(message);
 }
 
+static void emitByte(uint8_t byte)
+{
+    writeChunk(currentChunk(), byte, parser.previous.line);
+}
+
+static void emitBytes(uint8_t byte1, uint8_t byte2)
+{
+    emitByte(byte1);
+    emitByte(byte2);
+}
+
+static void emitReturn()
+{
+    emitByte(OP_RETURN);
+}
+
+static uint8_t makeConstant(Value Value)
+{
+    int constant = addConstant(currentChunk(), Value);
+    if (constant > UINT8_MAX)
+    {
+        error("Too many constants in one chunk.");
+        return 0;
+    }
+    return (uint8_t)constant;
+}
+
+static void emitConstant(Value value)
+{
+    emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void endCompiler()
+{
+    emitReturn();
+}
+
+static void grouping()
+{
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression");
+}
+
+static void number()
+{
+    double value = strtod(parser.previous.start, NULL);
+    emitConstant(value);
+}
+
+static void unary()
+{
+    TokenType operatorType = parser.previous.type;
+
+    // Compile operand
+    parsePrecedence(PREC_UNARY);
+
+    switch (operatorType)
+    {
+    case TOKEN_MINUS:
+        emitByte(OP_NEGATE);
+        break;
+
+    default:
+        return;
+    }
+}
+
+static void parsePrecedence(Precedence precedence)
+{
+}
+
+static void expression()
+{
+    parsePrecedence(PREC_ASSIGNMENT);
+}
+
 bool compile(const char *source, Chunk *chunk)
 {
     initScanner(source);
+    compilingChunk = chunk;
 
     parser.hadError = false;
     parser.panicMode = false;
@@ -85,5 +183,7 @@ bool compile(const char *source, Chunk *chunk)
     advance();
     expression();
     consume(TOKEN_EOF, "Expect end of expression.");
+
+    endCompiler();
     return !parser.hadError;
 }
