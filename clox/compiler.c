@@ -125,9 +125,9 @@ static void emitReturn()
     emitByte(OP_RETURN);
 }
 
-static uint8_t makeConstant(Value Value)
+static uint8_t makeConstant(Value value)
 {
-    int constant = addConstant(currentChunk(), Value);
+    int constant = addConstant(currentChunk(), value);
     if (constant > UINT8_MAX)
     {
         error("Too many constants in one chunk.");
