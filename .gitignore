@@ -7,3 +7,4 @@ jlox/out
 
 .vscode
 clox/build
+.clangd

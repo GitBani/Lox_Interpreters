@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#include "includes/chunk.h"
-#include "includes/memory.h"
+#include "chunk.h"
+#include "memory.h"
 
 void initChunk(Chunk *chunk)
 {
