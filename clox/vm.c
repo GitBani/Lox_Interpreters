@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "chunk.h"
 #include "common.h"
 #include "compiler.h"
 #include "debug.h"
@@ -210,6 +211,11 @@ static InterpretResult run() {
       if (isFalsey(peek(0))) {
         vm.ip += offset;
       }
+      break;
+    }
+    case OP_LOOP: {
+      uint16_t offset = READ_SHORT();
+      vm.ip -= offset;
       break;
     }
     default:
