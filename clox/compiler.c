@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "chunk.h"
 #include "common.h"
 #include "compiler.h"
 #include "scanner.h"
@@ -122,7 +123,12 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
   emitByte(byte2);
 }
 
-static void emitJump(uint8_t instruction) {}
+static int emitJump(uint8_t instruction) {
+  emitByte(instruction);
+  emitByte(0xFF);
+  emitByte(0xFF);
+  return currentChunk()->count - 2;
+}
 
 static void emitReturn() { emitByte(OP_RETURN); }
 
@@ -137,6 +143,18 @@ static uint8_t makeConstant(Value value) {
 
 static void emitConstant(Value value) {
   emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void patchJump(int offset) {
+  // difference is size of `then` block, -2 to remove jump operands
+  int jump = currentChunk()->count - offset - 2;
+
+  if (jump > UINT16_MAX) {
+    error("Too much code to jump over.");
+  }
+
+  currentChunk()->code[offset] = (jump >> 8) & 0xFF;
+  currentChunk()->code[offset + 1] = jump & 0xFF;
 }
 
 static void initCompiler(Compiler *compiler) {
@@ -467,9 +485,18 @@ static void ifStatement() {
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   int thenJump = emitJump(OP_JUMP_IF_FALSE);
+  emitByte(OP_POP); // instruction reached if condition is truthy
   statement();
 
+  int elseJump = emitJump(OP_JUMP);
+
   patchJump(thenJump);
+  emitByte(OP_POP); // instruction reached if condition is falsey
+
+  if (match(TOKEN_ELSE)) {
+    statement();
+  }
+  patchJump(elseJump);
 }
 
 static void printStatement() {
